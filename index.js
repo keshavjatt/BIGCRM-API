@@ -14,11 +14,8 @@ connectDB();
 // Middleware
 app.use(bodyParser.json());
 
-// CORS setup with specific origin
-app.use(cors({
-  origin: 'http://localhost:3000', // replace with your frontend's URL
-  credentials: true
-}));
+// CORS Install
+app.use(cors());
 
 // Routes
 app.use("/api/users", userRoutes);
