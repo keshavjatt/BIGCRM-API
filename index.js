@@ -14,12 +14,17 @@ connectDB();
 // Middleware
 app.use(bodyParser.json());
 
-// CORS Install
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: 'http://103.234.71.46', // Specify your frontend URL here
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+};
+
+app.use(cors(corsOptions));
 
 // Routes
 app.use("/api/users", userRoutes);
-app.use("/api/assets", assetRoutes); 
+app.use("/api/assets", assetRoutes);
 
 const PORT = process.env.PORT || 5000;
 
