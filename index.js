@@ -15,13 +15,17 @@ connectDB();
 app.use(bodyParser.json());
 
 // CORS configuration
-const allowedOrigins = ['http://103.234.71.46', 'http://localhost:3000'];
+const allowedOrigins = [
+  "http://103.234.71.46",
+  "http://localhost:3000",
+  "http://192.168.100.25",
+];
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)

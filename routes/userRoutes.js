@@ -10,7 +10,7 @@ const {
   getUserCount,
 } = require("../controller/userController");
 
-// User route
+// User Routes
 router.post("/register", registerUser);
 router.get("/count", getUserCount);
 router.get("/", getAllUsers);

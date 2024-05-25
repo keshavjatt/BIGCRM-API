@@ -1,5 +1,6 @@
 const ping = require("ping");
 const Asset = require("../model/assetModel");
+const sendEmail = require("../utils/mailer.js");
 
 const pingIPAddress = async (ipAddress) => {
   try {
@@ -20,6 +21,12 @@ const getAllUnreachableAssets = async (req, res) => {
       const isReachable = await pingIPAddress(asset.ipAddress1);
       if (!isReachable) {
         unreachableAssets.push(asset);
+        // Send email notification
+        const emailList = asset.emailId.split(", ");
+        const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
+        emailList.forEach((email) =>
+          sendEmail(email, subject, asset.linkId, asset.ipAddress1)
+        );
       }
     }
 
@@ -185,6 +192,36 @@ const getUnreachableAssetsCount = async (req, res) => {
   }
 };
 
+const getAnalytics = async (req, res) => {
+  try {
+    const assets = await Asset.find();
+    const analyticsData = [];
+
+    for (const asset of assets) {
+      const pingResult = await ping.promise.probe(asset.ipAddress1);
+      const performance = pingResult.alive
+        ? `${pingResult.time} ms`
+        : "Request timed out."; // Ensure 'Request timed out.' is returned
+
+      const liveStatus = pingResult.alive ? "UP" : "DOWN"; // Set liveStatus based on ping result
+
+      analyticsData.push({
+        linkId: asset.linkId,
+        siteName: asset.siteName,
+        ipAddress1: asset.ipAddress1,
+        liveStatus: liveStatus, // Set the liveStatus here
+        Performance: performance,
+        connectivity: asset.connectivity,
+      });
+    }
+
+    res.json(analyticsData);
+  } catch (error) {
+    console.error("Error while fetching analytics data:", error);
+    res.status(500).send("Server Error");
+  }
+};
+
 module.exports = {
   createAsset,
   getAllAssets,
@@ -195,4 +232,5 @@ module.exports = {
   getAssetCount,
   getRunningAssetsCount,
   getUnreachableAssetsCount,
+  getAnalytics,
 };
