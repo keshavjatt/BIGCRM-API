@@ -14,13 +14,45 @@ const pingIPAddress = async (ipAddress) => {
 
 const getAllUnreachableAssets = async (req, res) => {
   try {
-    const assets = await Asset.find();
+    const assets = await Asset.find({ status: "Active" }); // Fetch only 'Active' assets
     const unreachableAssets = [];
 
     for (const asset of assets) {
       const isReachable = await pingIPAddress(asset.ipAddress1);
       if (!isReachable) {
-        unreachableAssets.push(asset);
+        // Calculate the downtime
+        let downtime = "00:00:00"; // Initial value
+
+        if (asset.firstDownTime) {
+          const firstDownTime = new Date(asset.firstDownTime);
+          const currentTime = new Date();
+          const diff = currentTime - firstDownTime;
+          const hours = Math.floor(diff / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          const seconds = Math.floor((diff % 60000) / 1000);
+          downtime = `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        } else {
+          // Set the firstDownTime if it's not already set
+          asset.firstDownTime = new Date();
+        }
+
+        // Push the asset details with additional fields
+        unreachableAssets.push({
+          linkId: asset.linkId,
+          siteName: asset.siteName,
+          ipAddress1: asset.ipAddress1,
+          DownFor: downtime,
+          LiveStatus: "DOWN", // Hardcoded value
+          connectivity: asset.connectivity,
+          Status: "LINK DOWN", // Hardcoded value
+        });
+
+        // Update lastDownTime for the asset
+        asset.lastDownTime = new Date();
+        await asset.save();
+
         // Send email notification
         const emailList = asset.emailId.split(", ");
         const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
@@ -156,7 +188,7 @@ const getAssetCount = async (req, res) => {
 
 const getRunningAssetsCount = async (req, res) => {
   try {
-    const assets = await Asset.find();
+    const assets = await Asset.find({ status: "Active" }); // Only find active assets
     let runningAssetsCount = 0;
 
     for (const asset of assets) {
@@ -175,7 +207,7 @@ const getRunningAssetsCount = async (req, res) => {
 
 const getUnreachableAssetsCount = async (req, res) => {
   try {
-    const assets = await Asset.find();
+    const assets = await Asset.find({ status: "Active" }); // Only find active assets
     let unreachableAssetsCount = 0;
 
     for (const asset of assets) {
@@ -194,7 +226,7 @@ const getUnreachableAssetsCount = async (req, res) => {
 
 const getAnalytics = async (req, res) => {
   try {
-    const assets = await Asset.find();
+    const assets = await Asset.find({ status: "Active" }); // Only find active assets
     const analyticsData = [];
 
     for (const asset of assets) {
@@ -222,6 +254,37 @@ const getAnalytics = async (req, res) => {
   }
 };
 
+const updateAssetStatus = async (req, res) => {
+  try {
+    const { linkId, status } = req.body;
+
+    if (!linkId || !status) {
+      return res
+        .status(400)
+        .json({ message: "Link ID and status are required" });
+    }
+
+    // Check if the status provided is valid
+    if (!["Active", "Inactive"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status provided" });
+    }
+
+    const updatedAsset = await Asset.updateStatus(linkId, status);
+
+    if (!updatedAsset) {
+      return res.status(404).json({ message: "Asset not found" });
+    }
+
+    res.json({
+      message: "Asset status updated successfully",
+      asset: updatedAsset,
+    });
+  } catch (error) {
+    console.error("Error updating asset status:", error);
+    res.status(500).send("Server Error");
+  }
+};
+
 module.exports = {
   createAsset,
   getAllAssets,
@@ -233,4 +296,5 @@ module.exports = {
   getRunningAssetsCount,
   getUnreachableAssetsCount,
   getAnalytics,
+  updateAssetStatus,
 };
