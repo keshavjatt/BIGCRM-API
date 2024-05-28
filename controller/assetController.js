@@ -15,10 +15,19 @@ const pingIPAddress = async (ipAddress) => {
 const getAllUnreachableAssets = async (req, res) => {
   try {
     const assets = await Asset.find({ status: "Active" }); // Fetch only 'Active' assets
-    const unreachableAssets = [];
 
-    for (const asset of assets) {
-      const isReachable = await pingIPAddress(asset.ipAddress1);
+    // Parallelize ping requests
+    const pingPromises = assets.map((asset) => pingIPAddress(asset.ipAddress1));
+    const pingResults = await Promise.all(pingPromises);
+
+    const unreachableAssets = [];
+    const updatePromises = [];
+    const emailPromises = [];
+
+    for (let i = 0; i < assets.length; i++) {
+      const asset = assets[i];
+      const isReachable = pingResults[i];
+
       if (!isReachable) {
         // Calculate the downtime
         let downtime = "00:00:00"; // Initial value
@@ -51,16 +60,22 @@ const getAllUnreachableAssets = async (req, res) => {
 
         // Update lastDownTime for the asset
         asset.lastDownTime = new Date();
-        await asset.save();
+        updatePromises.push(asset.save());
 
         // Send email notification
         const emailList = asset.emailId.split(", ");
         const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
-        emailList.forEach((email) =>
-          sendEmail(email, subject, asset.linkId, asset.ipAddress1)
-        );
+        emailList.forEach((email) => {
+          emailPromises.push(
+            sendEmail(email, subject, asset.linkId, asset.ipAddress1)
+          );
+        });
       }
     }
+
+    // Await all updates and email sends
+    await Promise.all(updatePromises);
+    await Promise.all(emailPromises);
 
     res.json(unreachableAssets);
   } catch (error) {
@@ -189,14 +204,13 @@ const getAssetCount = async (req, res) => {
 const getRunningAssetsCount = async (req, res) => {
   try {
     const assets = await Asset.find({ status: "Active" }); // Only find active assets
-    let runningAssetsCount = 0;
 
-    for (const asset of assets) {
-      const isRunning = await pingIPAddress(asset.ipAddress1);
-      if (isRunning) {
-        runningAssetsCount++;
-      }
-    }
+    // Parallelize ping requests
+    const pingPromises = assets.map(asset => ping.promise.probe(asset.ipAddress1));
+    const pingResults = await Promise.all(pingPromises);
+
+    // Count the number of running assets
+    const runningAssetsCount = pingResults.filter(pingResult => pingResult.alive).length;
 
     res.json({ runningAssetsCount });
   } catch (error) {
@@ -208,14 +222,13 @@ const getRunningAssetsCount = async (req, res) => {
 const getUnreachableAssetsCount = async (req, res) => {
   try {
     const assets = await Asset.find({ status: "Active" }); // Only find active assets
-    let unreachableAssetsCount = 0;
 
-    for (const asset of assets) {
-      const isRunning = await pingIPAddress(asset.ipAddress1);
-      if (!isRunning) {
-        unreachableAssetsCount++;
-      }
-    }
+    // Parallelize ping requests
+    const pingPromises = assets.map(asset => ping.promise.probe(asset.ipAddress1));
+    const pingResults = await Promise.all(pingPromises);
+
+    // Count the number of unreachable assets
+    const unreachableAssetsCount = pingResults.filter(pingResult => !pingResult.alive).length;
 
     res.json({ unreachableAssetsCount });
   } catch (error) {
@@ -227,25 +240,31 @@ const getUnreachableAssetsCount = async (req, res) => {
 const getAnalytics = async (req, res) => {
   try {
     const assets = await Asset.find({ status: "Active" }); // Only find active assets
-    const analyticsData = [];
 
-    for (const asset of assets) {
-      const pingResult = await ping.promise.probe(asset.ipAddress1);
+    // Parallelize ping requests
+    const pingPromises = assets.map((asset) =>
+      ping.promise.probe(asset.ipAddress1)
+    );
+    const pingResults = await Promise.all(pingPromises);
+
+    // Collect analytics data based on ping results
+    const analyticsData = assets.map((asset, index) => {
+      const pingResult = pingResults[index];
       const performance = pingResult.alive
         ? `${pingResult.time} ms`
-        : "Request timed out."; // Ensure 'Request timed out.' is returned
+        : "Request timed out.";
 
-      const liveStatus = pingResult.alive ? "UP" : "DOWN"; // Set liveStatus based on ping result
+      const liveStatus = pingResult.alive ? "UP" : "DOWN";
 
-      analyticsData.push({
+      return {
         linkId: asset.linkId,
         siteName: asset.siteName,
         ipAddress1: asset.ipAddress1,
-        liveStatus: liveStatus, // Set the liveStatus here
+        liveStatus: liveStatus,
         Performance: performance,
         connectivity: asset.connectivity,
-      });
-    }
+      };
+    });
 
     res.json(analyticsData);
   } catch (error) {
