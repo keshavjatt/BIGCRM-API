@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const assetRoutes = require("./routes/assetRoutes");
+const pingRoutes = require("./routes/pingRoutes");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -36,6 +37,7 @@ app.use(cors(corsOptions));
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/assets", assetRoutes);
+app.use("/api/pingProgram", pingRoutes);
 
 const PORT = process.env.PORT || 5000;
 
