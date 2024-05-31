@@ -1,5 +1,6 @@
 const ping = require("ping");
 const Asset = require("../model/assetModel");
+const Ticket = require("../model/ticketModel.js");
 const sendEmail = require("../utils/mailer.js");
 
 const pingIPAddress = async (ipAddress) => {
@@ -12,25 +13,33 @@ const pingIPAddress = async (ipAddress) => {
   }
 };
 
+// Helper function to generate ticket number
+let currentSrNo = 1;
+const generateTicketNo = () => {
+  const ticketNo = `SR#${currentSrNo.toString().padStart(3, "0")}`;
+  currentSrNo++;
+  return ticketNo;
+};
+
+// getAllUnreachableAssets function ko modify karte hain
 const getAllUnreachableAssets = async (req, res) => {
   try {
-    const assets = await Asset.find({ status: "Active" }); // Fetch only 'Active' assets
+    const assets = await Asset.find({ status: "Active" });
 
-    // Parallelize ping requests
     const pingPromises = assets.map((asset) => pingIPAddress(asset.ipAddress1));
     const pingResults = await Promise.all(pingPromises);
 
     const unreachableAssets = [];
     const updatePromises = [];
     const emailPromises = [];
+    const ticketPromises = [];
 
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
       const isReachable = pingResults[i];
 
       if (!isReachable) {
-        // Calculate the downtime
-        let downtime = "00:00:00"; // Initial value
+        let downtime = "00:00:00";
 
         if (asset.firstDownTime) {
           const firstDownTime = new Date(asset.firstDownTime);
@@ -43,39 +52,62 @@ const getAllUnreachableAssets = async (req, res) => {
             .toString()
             .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
         } else {
-          // Set the firstDownTime if it's not already set
           asset.firstDownTime = new Date();
         }
 
-        // Push the asset details with additional fields
         unreachableAssets.push({
           linkId: asset.linkId,
           siteName: asset.siteName,
           ipAddress1: asset.ipAddress1,
           DownFor: downtime,
-          LiveStatus: "DOWN", // Hardcoded value
+          LiveStatus: "DOWN",
           connectivity: asset.connectivity,
-          Status: "LINK DOWN", // Hardcoded value
+          Status: "LINK DOWN",
         });
 
-        // Update lastDownTime for the asset
         asset.lastDownTime = new Date();
         updatePromises.push(asset.save());
 
-        // Send email notification
         const emailList = asset.emailId.split(", ");
         const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
+
+        let ticketNo = null;
+        const existingTicket = await Ticket.findOne({
+          LinkId: asset.linkId,
+        });
+
+        if (!existingTicket) {
+          const ticket = new Ticket({
+            SrNo: currentSrNo,
+            TicketNo: generateTicketNo(),
+            SiteName: asset.siteName,
+            LinkId: asset.linkId,
+            Down_Timer: downtime,
+            AssignedBy: "N/A",
+            LastUpdateBy: "N/A",
+            LastUpdateDate: null,
+          });
+          const savedTicket = await ticket.save();
+          ticketNo = savedTicket.TicketNo;
+          ticketPromises.push(savedTicket);
+        } else {
+          // Update Down_Timer for existing ticket
+          existingTicket.Down_Timer = downtime;
+          await existingTicket.save();
+          ticketNo = existingTicket.TicketNo;
+        }
+
         emailList.forEach((email) => {
           emailPromises.push(
-            sendEmail(email, subject, asset.linkId, asset.ipAddress1)
+            sendEmail(email, subject, asset.linkId, asset.ipAddress1, ticketNo)
           );
         });
       }
     }
 
-    // Await all updates and email sends
     await Promise.all(updatePromises);
     await Promise.all(emailPromises);
+    await Promise.all(ticketPromises);
 
     res.json(unreachableAssets);
   } catch (error) {
@@ -206,11 +238,15 @@ const getRunningAssetsCount = async (req, res) => {
     const assets = await Asset.find({ status: "Active" }); // Only find active assets
 
     // Parallelize ping requests
-    const pingPromises = assets.map(asset => ping.promise.probe(asset.ipAddress1));
+    const pingPromises = assets.map((asset) =>
+      ping.promise.probe(asset.ipAddress1)
+    );
     const pingResults = await Promise.all(pingPromises);
 
     // Count the number of running assets
-    const runningAssetsCount = pingResults.filter(pingResult => pingResult.alive).length;
+    const runningAssetsCount = pingResults.filter(
+      (pingResult) => pingResult.alive
+    ).length;
 
     res.json({ runningAssetsCount });
   } catch (error) {
@@ -224,11 +260,15 @@ const getUnreachableAssetsCount = async (req, res) => {
     const assets = await Asset.find({ status: "Active" }); // Only find active assets
 
     // Parallelize ping requests
-    const pingPromises = assets.map(asset => ping.promise.probe(asset.ipAddress1));
+    const pingPromises = assets.map((asset) =>
+      ping.promise.probe(asset.ipAddress1)
+    );
     const pingResults = await Promise.all(pingPromises);
 
     // Count the number of unreachable assets
-    const unreachableAssetsCount = pingResults.filter(pingResult => !pingResult.alive).length;
+    const unreachableAssetsCount = pingResults.filter(
+      (pingResult) => !pingResult.alive
+    ).length;
 
     res.json({ unreachableAssetsCount });
   } catch (error) {

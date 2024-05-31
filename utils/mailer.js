@@ -3,17 +3,15 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
-// Create a transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
   service: "Gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Your email address
-    pass: process.env.EMAIL_PASS, // Your email password or app password if using Gmail
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
-// Function to create HTML content for the email
-const createEmailBody = (linkId, ipAddress) => {
+const createEmailBody = (linkId, ipAddress, ticketNo) => {
   const currentDateTime = new Date().toLocaleString();
   return `
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
@@ -27,11 +25,11 @@ const createEmailBody = (linkId, ipAddress) => {
               <p style="color: black;"><span style="font-weight: bold; color: black;">Project ID :</span> SD-WAN INDRAPRASTHA GAS LTD</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Link ID :</span> ${linkId}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">IP Address 1 :</span> ${ipAddress}</p>
-              <p style="color: black;"><span style="font-weight: bold; color: black;">Ticket ID:</span> 23115</p>
+              <p style="color: black;"><span style="font-weight: bold; color: black;">Ticket No:</span> ${ticketNo}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Date :</span> ${currentDateTime}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Problem Code :</span> LINK DOWN</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Ticket Status :</span> Pending</p>
-              <p style="color: black;"><span style="font-weight: bold; color: black;">Create by :</span> CRM</p>
+              <p style="color: black;"><span style="font-weight: bold; color: black;">Created by :</span> CRM</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Description :</span> Auto Ticketing system@</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Service Update :</span></p>
             </td>
@@ -45,29 +43,27 @@ const createEmailBody = (linkId, ipAddress) => {
   `;
 };
 
-// Function to send an email with HTML content
-const sendEmail = (to, subject, linkId, ipAddress) => {
-  const htmlContent = createEmailBody(linkId, ipAddress);
+const sendEmail = (to, subject, linkId, ipAddress, ticketNo) => {
+  const htmlContent = createEmailBody(linkId, ipAddress, ticketNo);
   const mailOptions = {
-    from: process.env.EMAIL_USER, // Sender address
-    to: to, // List of receivers
-    subject: subject, // Subject line
-    html: htmlContent, // HTML body
+    from: process.env.EMAIL_USER,
+    to: to,
+    subject: subject,
+    html: htmlContent,
     attachments: [
       {
         filename: "header.png",
         path: path.join(__dirname, "..", "images", "header.png"),
-        cid: "headerImage", // same cid value as in the html img src
+        cid: "headerImage",
       },
       {
         filename: "footer.png",
         path: path.join(__dirname, "..", "images", "footer.png"),
-        cid: "footerImage", // same cid value as in the html img src
+        cid: "footerImage",
       },
     ],
   };
 
-  // Send the email
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log("Error sending email:", error);
