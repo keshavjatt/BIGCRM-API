@@ -1,4 +1,5 @@
 const Ticket = require("../model/ticketModel");
+const moment = require("moment");
 
 // Get all tickets
 const getAllTickets = async (req, res) => {
@@ -30,35 +31,31 @@ const getSingleTicketByNo = async (req, res) => {
 // Update a ticket by TicketNo
 const updateTicketByNo = async (req, res) => {
   try {
-    // Define the fields that can be updated
-    const allowedUpdates = [
-      "ProblemCode",
-      "Status",
-      "RFO",
-      "AssignedBy",
-      "CreatedBy",
-      "LastUpdateBy",
-      "LastUpdateDate",
-    ];
-
-    // Create an update object with only the allowed fields
-    const updates = {};
-    allowedUpdates.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        updates[field] = req.body[field];
-      }
-    });
-
-    // Find the ticket by TicketNo and update the allowed fields
-    const ticket = await Ticket.findOneAndUpdate(
-      { TicketNo: req.params.ticketNo },
-      { $set: updates },
-      { new: true }
-    );
+    // Fetch the ticket by TicketNo
+    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo });
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
+
+    // Get current date and time formatted as 'DD-MM-YYYY hh:mm A'
+    const currentDateTime = moment().format("DD-MM-YYYY hh:mm A");
+
+    // Define the fields to be updated including current date and time
+    const updateFields = {
+      ProblemCode: req.body.ProblemCode || ticket.ProblemCode,
+      AssignedFor: req.body.AssignedFor || ticket.AssignedFor,
+      RFO: req.body.RFO || ticket.RFO,
+      Status: req.body.Status || ticket.Status,
+      ResolutionUpdate: req.body.ResolutionUpdate || ticket.ResolutionUpdate,
+      LastUpdateDate: currentDateTime, // Include current date and time
+    };
+
+    // Push the updated fields to the ticket's updates array
+    ticket.updates.push(updateFields);
+
+    // Save the updated ticket
+    await ticket.save();
 
     res.json({ message: "Ticket successfully updated", ticket });
   } catch (err) {
