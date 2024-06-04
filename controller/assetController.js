@@ -2,6 +2,7 @@ const ping = require("ping");
 const Asset = require("../model/assetModel");
 const Ticket = require("../model/ticketModel.js");
 const sendEmail = require("../utils/mailer.js");
+const moment = require("moment");
 
 const pingIPAddress = async (ipAddress) => {
   try {
@@ -19,6 +20,11 @@ const generateTicketNo = () => {
   const ticketNo = `SR#${currentSrNo.toString().padStart(3, "0")}`;
   currentSrNo++;
   return ticketNo;
+};
+
+// Format date helper function
+const formatDate = (date) => {
+  return moment(date).format("DD-MM-YYYY hh:mm A");
 };
 
 // getAllUnreachableAssets function ko modify karte hain
@@ -109,7 +115,13 @@ const getAllUnreachableAssets = async (req, res) => {
     await Promise.all(emailPromises);
     await Promise.all(ticketPromises);
 
-    res.json(unreachableAssets);
+    // Format the CreatedDate of each ticket before sending the response
+    const formattedTickets = unreachableAssets.map((ticket) => ({
+      ...ticket,
+      CreatedDate: formatDate(ticket.CreatedDate),
+    }));
+
+    res.json(formattedTickets);
   } catch (error) {
     console.error("Error while fetching unreachable assets:", error);
     res.status(500).send("Server Error");

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment");
 
 const ticketSchema = new mongoose.Schema({
   SrNo: { type: Number, required: true },
@@ -12,10 +13,19 @@ const ticketSchema = new mongoose.Schema({
   Down_Timer: { type: String, required: true },
   RFO: { type: String, default: "N/A" },
   AssignedBy: { type: String, default: "N/A" },
-  CreatedBy: { type: String, default: "Auto Ticketing System" },
-  CreatedDate: { type: Date, default: Date.now },
+  CreatedBy: { type: String, default: "CRM" },
+  CreatedDate: { type: String, default: moment().format("DD-MM-YYYY hh:mm A") }, // Format date here
   LastUpdateBy: { type: String, default: "N/A" },
-  LastUpdateDate: { type: Date, default: null },
+  LastUpdateDate: { type: String, default: null },
+  updates: { type: Array, default: [] },
+});
+
+// Pre-save hook to format the CreatedDate before saving
+ticketSchema.pre("save", function (next) {
+  if (!this.CreatedDate) {
+    this.CreatedDate = moment().format("DD-MM-YYYY hh:mm A");
+  }
+  next();
 });
 
 module.exports = mongoose.model("Ticket", ticketSchema);
