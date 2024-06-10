@@ -61,28 +61,16 @@ const getAllUnreachableAssets = async (req, res) => {
           asset.firstDownTime = new Date();
         }
 
-        unreachableAssets.push({
-          linkId: asset.linkId,
-          siteName: asset.siteName,
-          ipAddress1: asset.ipAddress1,
-          DownFor: downtime,
-          LiveStatus: "DOWN",
-          connectivity: asset.connectivity,
-          Status: "LINK DOWN",
-        });
-
-        asset.lastDownTime = new Date();
-        updatePromises.push(asset.save());
-
-        const emailList = asset.emailId.split(", ");
-        const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
-
+        const existingTicket = await Ticket.findOne({ LinkId: asset.linkId });
+        let ticketStatus = "Pending";
         let ticketNo = null;
-        const existingTicket = await Ticket.findOne({
-          LinkId: asset.linkId,
-        });
 
-        if (!existingTicket) {
+        if (existingTicket) {
+          ticketStatus = existingTicket.Status;
+          existingTicket.Down_Timer = downtime;
+          await existingTicket.save();
+          ticketNo = existingTicket.TicketNo;
+        } else {
           const ticket = new Ticket({
             SrNo: currentSrNo,
             TicketNo: generateTicketNo(),
@@ -92,16 +80,28 @@ const getAllUnreachableAssets = async (req, res) => {
             AssignedBy: "N/A",
             LastUpdateBy: "N/A",
             LastUpdateDate: null,
+            Status: ticketStatus,
           });
           const savedTicket = await ticket.save();
           ticketNo = savedTicket.TicketNo;
           ticketPromises.push(savedTicket);
-        } else {
-          // Update Down_Timer for existing ticket
-          existingTicket.Down_Timer = downtime;
-          await existingTicket.save();
-          ticketNo = existingTicket.TicketNo;
         }
+
+        unreachableAssets.push({
+          linkId: asset.linkId,
+          siteName: asset.siteName,
+          ipAddress1: asset.ipAddress1,
+          DownFor: downtime,
+          LiveStatus: "DOWN",
+          connectivity: asset.connectivity,
+          TicketStatus: ticketStatus,
+        });
+
+        asset.lastDownTime = new Date();
+        updatePromises.push(asset.save());
+
+        const emailList = asset.emailId.split(", ");
+        const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
 
         emailList.forEach((email) => {
           emailPromises.push(
@@ -115,7 +115,6 @@ const getAllUnreachableAssets = async (req, res) => {
     await Promise.all(emailPromises);
     await Promise.all(ticketPromises);
 
-    // Format the CreatedDate of each ticket before sending the response
     const formattedTickets = unreachableAssets.map((ticket) => ({
       ...ticket,
       CreatedDate: formatDate(ticket.CreatedDate),
@@ -124,7 +123,7 @@ const getAllUnreachableAssets = async (req, res) => {
     res.json(formattedTickets);
   } catch (error) {
     console.error("Error while fetching unreachable assets:", error);
-    res.status(500).send("Server Error");
+    res.status(500).send("Error while fetching unreachable assets");
   }
 };
 
@@ -142,6 +141,7 @@ const createAsset = async (req, res) => {
       linkBW,
       discoveryDate,
       emailId,
+      projectName
     } = req.body;
 
     // Check if any field is empty
@@ -156,7 +156,8 @@ const createAsset = async (req, res) => {
       !connectivity ||
       !linkBW ||
       !discoveryDate ||
-      !emailId
+      !emailId ||
+      !projectName
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }

@@ -13,11 +13,11 @@ const assetSchema = new mongoose.Schema({
   discoveryDate: { type: String, required: true },
   emailId: { type: String, required: true },
   status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
-  lastDownTime: { type: Date, default: null }, // New field to store last downtime timestamp
-  firstDownTime: { type: Date, default: null }, // New field to store first downtime timestamp
+  lastDownTime: { type: Date, default: null },
+  firstDownTime: { type: Date, default: null },
+  projectName: { type: String, required: true }, // New field added
 });
 
-// Method to update asset status
 assetSchema.statics.updateStatus = async function (linkId, newStatus) {
   try {
     return await this.findOneAndUpdate(

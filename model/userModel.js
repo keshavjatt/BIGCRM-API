@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
     enum: ["Admin", "Manager", "Executive"],
     required: true,
   },
+  projectName: { type: String, required: true }, // New field added
 });
 
 module.exports = mongoose.model("User", userSchema);
