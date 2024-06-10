@@ -49,10 +49,19 @@ const updateTicketByNo = async (req, res) => {
       Status: req.body.Status || ticket.Status,
       ResolutionUpdate: req.body.ResolutionUpdate || ticket.ResolutionUpdate,
       LastUpdateDate: currentDateTime, // Include current date and time
+      AssignedBy: req.body.AssignedFor || ticket.AssignedBy, // Set AssignedBy to AssignedFor
     };
 
     // Push the updated fields to the ticket's updates array
     ticket.updates.push(updateFields);
+
+    // Update the ticket object with the latest values from updateFields
+    ticket.ProblemCode = updateFields.ProblemCode;
+    ticket.AssignedFor = updateFields.AssignedFor;
+    ticket.RFO = updateFields.RFO;
+    ticket.Status = updateFields.Status;
+    ticket.LastUpdateDate = updateFields.LastUpdateDate;
+    ticket.AssignedBy = updateFields.AssignedBy;
 
     // Save the updated ticket
     await ticket.save();
@@ -82,9 +91,74 @@ const deleteTicketByNo = async (req, res) => {
   }
 };
 
+// Get count of open tickets (excluding CLOSED status)
+const getOpenTicketsCount = async (req, res) => {
+  try {
+    const openTicketsCount = await Ticket.countDocuments({
+      Status: { $ne: "Closed" }
+    });
+    res.json({ openTicketsCount });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+// Get count of pending tickets (status PENDING)
+const getPendingTicketsCount = async (req, res) => {
+  try {
+    const pendingTicketsCount = await Ticket.countDocuments({ Status: "Pending" });
+    res.json({ pendingTicketsCount });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+// Get ticket count for the last 15 days
+const getTicketCountsLast15Days = async (req, res) => {
+  try {
+    const today = moment().startOf('day');
+    const last15Days = Array.from({ length: 15 }, (v, i) => today.clone().subtract(i, 'days').format('DD-MM-YYYY'));
+
+    const ticketCounts = await Ticket.aggregate([
+      {
+        $match: {
+          CreatedDate: {
+            $gte: today.clone().subtract(14, 'days').toDate(),
+            $lte: today.toDate()
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%d-%m-%Y", date: "$CreatedDate" } },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const countsByDate = last15Days.map(date => {
+      const countData = ticketCounts.find(tc => tc._id === date);
+      return {
+        date,
+        count: countData ? countData.count : 0
+      };
+    });
+
+    res.json(countsByDate);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
 module.exports = {
   getAllTickets,
   getSingleTicketByNo,
   updateTicketByNo,
   deleteTicketByNo,
+  getOpenTicketsCount,
+  getPendingTicketsCount,
+  getTicketCountsLast15Days
 };

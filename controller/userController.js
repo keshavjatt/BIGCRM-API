@@ -5,23 +5,19 @@ require("dotenv").config();
 
 const registerUser = async (req, res) => {
   try {
-    const { name, mobileNo, empId, password, address, userRole } = req.body;
+    const { name, mobileNo, empId, password, address, userRole, projectName } = req.body;
 
-    // Check if all fields are provided
-    if (!name || !mobileNo || !empId || !password || !address || !userRole) {
+    if (!name || !mobileNo || !empId || !password || !address || !userRole || !projectName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user already exists
     let user = await User.findOne({ empId });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
     user = new User({
       name,
       mobileNo,
@@ -29,6 +25,7 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       address,
       userRole,
+      projectName,
     });
 
     await user.save();
@@ -36,7 +33,7 @@ const registerUser = async (req, res) => {
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("userRoles does not match");
+    res.status(500).send("Server Error");
   }
 };
 
@@ -117,30 +114,32 @@ const loginUser = async (req, res) => {
   try {
     const { empId, password } = req.body;
 
-    // Check if all fields are provided
+    // Check if empId and password are provided
     if (!empId || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user exists
+    // Find user by empId
     const user = await User.findOne({ empId });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Check password
+    // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Generate JWT token
+    // Create payload for JWT with projectName from user object
     const payload = {
       user: {
         id: user.id,
+        projectName: user.projectName, // Include project name in the token
       },
     };
 
+    // Sign JWT and send it to the client
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -148,7 +147,7 @@ const loginUser = async (req, res) => {
       (err, token) => {
         if (err) throw err;
         res.json({
-          message: "Login user successfully",
+          message: "User logged in successfully",
           token,
         });
       }
