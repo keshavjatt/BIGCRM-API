@@ -4,7 +4,7 @@ const moment = require("moment");
 // Get all tickets
 const getAllTickets = async (req, res) => {
   try {
-    const tickets = await Ticket.find();
+    const tickets = await Ticket.find({ projectName: req.user.projectName }); // Filter by projectName
     res.json(tickets);
   } catch (err) {
     console.error(err.message);
@@ -15,7 +15,7 @@ const getAllTickets = async (req, res) => {
 // Get a single ticket by TicketNo
 const getSingleTicketByNo = async (req, res) => {
   try {
-    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo });
+    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo, projectName: req.user.projectName });
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -32,7 +32,7 @@ const getSingleTicketByNo = async (req, res) => {
 const updateTicketByNo = async (req, res) => {
   try {
     // Fetch the ticket by TicketNo
-    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo });
+    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo, projectName: req.user.projectName });
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -78,6 +78,7 @@ const deleteTicketByNo = async (req, res) => {
   try {
     const ticket = await Ticket.findOneAndDelete({
       TicketNo: req.params.ticketNo,
+      projectName: req.user.projectName
     });
 
     if (!ticket) {
@@ -95,7 +96,8 @@ const deleteTicketByNo = async (req, res) => {
 const getOpenTicketsCount = async (req, res) => {
   try {
     const openTicketsCount = await Ticket.countDocuments({
-      Status: { $ne: "Closed" }
+      Status: { $ne: "Closed" },
+      projectName: req.user.projectName
     });
     res.json({ openTicketsCount });
   } catch (err) {
@@ -107,7 +109,7 @@ const getOpenTicketsCount = async (req, res) => {
 // Get count of pending tickets (status PENDING)
 const getPendingTicketsCount = async (req, res) => {
   try {
-    const pendingTicketsCount = await Ticket.countDocuments({ Status: "Pending" });
+    const pendingTicketsCount = await Ticket.countDocuments({ Status: "Pending", projectName: req.user.projectName });
     res.json({ pendingTicketsCount });
   } catch (err) {
     console.error(err.message);

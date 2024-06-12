@@ -17,6 +17,7 @@ const ticketSchema = new mongoose.Schema({
   CreatedDate: { type: String, default: moment().format("DD-MM-YYYY hh:mm A") }, // Format date here
   LastUpdateBy: { type: String, default: "N/A" },
   LastUpdateDate: { type: String, default: null },
+  projectName: { type: String, required: true },
   updates: { type: Array, default: [] },
 });
 

@@ -1,8 +1,9 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const User = require("../model/userModel"); // Ensure you import your User model
 
-module.exports = function (req, res, next) {
-  const token = req.header("Authorization");
+module.exports = async function (req, res, next) {
+  const token = req.header("token");
 
   if (!token) {
     return res.status(401).json({ message: "No token, authorization denied" });
@@ -11,6 +12,14 @@ module.exports = function (req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.user;
+
+    // Fetch the user's project name from the database
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    req.user.projectName = user.projectName; // Add projectName to the request object
     next();
   } catch (err) {
     res.status(401).json({ message: "Token is not valid" });

@@ -39,7 +39,7 @@ const registerUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find({ projectName: req.user.projectName }); // Filter by projectName
     res.json(users);
   } catch (err) {
     console.error(err.message);
@@ -48,29 +48,29 @@ const getAllUsers = async (req, res) => {
 };
 
 const getUserById = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
+    try {
+      const user = await User.findOne({ _id: req.params.id, projectName: req.user.projectName });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    if (err.kind === "ObjectId") {
-      return res.status(404).json({ message: "User nahi mila" });
+      res.json(user);
+    } catch (err) {
+      console.error(err.message);
+      if (err.kind === "ObjectId") {
+        return res.status(404).json({ message: "User nahi mila" });
+      }
+      res.status(500).send("Server Error");
     }
-    res.status(500).send("Server Error");
-  }
 };
 
 const updateUser = async (req, res) => {
   try {
-    const { name, mobileNo, empId, password, address, userRole } = req.body;
+    const { name, mobileNo, empId, password, address, userRole, projectName } = req.body;
 
-    // Check if user exists
-    let user = await User.findById(req.params.id);
+    // Check if user exists with the given projectName and ID
+    let user = await User.findOne({ _id: req.params.id, projectName: req.user.projectName });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -81,6 +81,7 @@ const updateUser = async (req, res) => {
     user.empId = empId;
     user.address = address;
     user.userRole = userRole;
+    user.projectName = projectName;
 
     // If password is being updated, hash it
     if (password) {
@@ -99,7 +100,11 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    // Filter by projectName and user ID
+    const deletedUser = await User.findOneAndDelete({
+      _id: req.params.id,
+      projectName: req.user.projectName,
+    });
     if (!deletedUser) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -160,7 +165,7 @@ const loginUser = async (req, res) => {
 
 const getUserCount = async (req, res) => {
   try {
-    const count = await User.countDocuments();
+    const count = await User.countDocuments({ projectName: req.user.projectName }); // Filter by projectName
     res.json({ count });
   } catch (err) {
     console.error(err.message);
