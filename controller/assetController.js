@@ -30,7 +30,8 @@ const formatDate = (date) => {
 // getAllUnreachableAssets function ko modify karte hain
 const getAllUnreachableAssets = async (req, res) => {
   try {
-    const assets = await Asset.find({ status: "Active" });
+    const projectName = req.user.projectName;
+    const assets = await Asset.find({ status: "Active", projectName });
 
     const pingPromises = assets.map((asset) => pingIPAddress(asset.ipAddress1));
     const pingResults = await Promise.all(pingPromises);
@@ -80,6 +81,7 @@ const getAllUnreachableAssets = async (req, res) => {
             AssignedBy: "N/A",
             LastUpdateBy: "N/A",
             LastUpdateDate: null,
+            projectName: projectName, // Pass projectName from asset
             Status: ticketStatus,
           });
           const savedTicket = await ticket.save();
@@ -179,7 +181,7 @@ const createAsset = async (req, res) => {
 
 const getAllAssets = async (req, res) => {
   try {
-    const assets = await Asset.find();
+    const assets = await Asset.find({ projectName: req.user.projectName }); // Filter by projectName
     res.json(assets);
   } catch (err) {
     console.error(err.message);
@@ -189,7 +191,7 @@ const getAllAssets = async (req, res) => {
 
 const getAssetByLinkId = async (req, res) => {
   try {
-    const asset = await Asset.findOne({ linkId: req.params.linkId });
+    const asset = await Asset.findOne({ linkId: req.params.linkId, projectName: req.user.projectName });
 
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
@@ -205,7 +207,7 @@ const getAssetByLinkId = async (req, res) => {
 const updateAssetByLinkId = async (req, res) => {
   try {
     const asset = await Asset.findOneAndUpdate(
-      { linkId: req.params.linkId },
+      { linkId: req.params.linkId, projectName: req.user.projectName }, // Filter by linkId and projectName
       { $set: req.body },
       { new: true }
     );
@@ -223,7 +225,7 @@ const updateAssetByLinkId = async (req, res) => {
 
 const deleteAssetByLinkId = async (req, res) => {
   try {
-    const asset = await Asset.findOneAndDelete({ linkId: req.params.linkId });
+    const asset = await Asset.findOneAndDelete({ linkId: req.params.linkId, projectName: req.user.projectName });
 
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
@@ -238,7 +240,7 @@ const deleteAssetByLinkId = async (req, res) => {
 
 const getAssetCount = async (req, res) => {
   try {
-    const count = await Asset.countDocuments();
+    const count = await Asset.countDocuments({ projectName: req.user.projectName }); // Filter by projectName
     res.json({ count });
   } catch (err) {
     console.error(err.message);
@@ -248,7 +250,8 @@ const getAssetCount = async (req, res) => {
 
 const getRunningAssetsCount = async (req, res) => {
   try {
-    const assets = await Asset.find({ status: "Active" }); // Only find active assets
+    // Filter by projectName and status "Active"
+    const assets = await Asset.find({ status: "Active", projectName: req.user.projectName });
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -270,7 +273,8 @@ const getRunningAssetsCount = async (req, res) => {
 
 const getUnreachableAssetsCount = async (req, res) => {
   try {
-    const assets = await Asset.find({ status: "Active" }); // Only find active assets
+    // Filter by projectName and status "Active"
+    const assets = await Asset.find({ status: "Active", projectName: req.user.projectName });
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -292,7 +296,8 @@ const getUnreachableAssetsCount = async (req, res) => {
 
 const getAnalytics = async (req, res) => {
   try {
-    const assets = await Asset.find({ status: "Active" }); // Only find active assets
+    // Filter by projectName and status "Active"
+    const assets = await Asset.find({ status: "Active", projectName: req.user.projectName });
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
