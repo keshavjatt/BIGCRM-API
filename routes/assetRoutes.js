@@ -12,6 +12,8 @@ const {
   getUnreachableAssetsCount,
   getAnalytics,
   updateAssetStatus,
+  getCPUUsage,
+  getRAMUsage,
 } = require("../controller/assetController");
 
 const router = express.Router();
@@ -26,7 +28,9 @@ router.get("/runningAssets", auth, getRunningAssetsCount);
 router.get("/unreachableAssets/count", auth, getUnreachableAssetsCount);
 router.get("/analytics", auth, getAnalytics);
 router.get("/:linkId", auth, getAssetByLinkId);
-router.put("/:linkId", auth, updateAssetByLinkId);
 router.delete("/:linkId", auth, deleteAssetByLinkId);
+router.put("/:linkId", auth, updateAssetByLinkId);
+router.get("/cpu/usage", getCPUUsage); 
+router.get("/ram/usage", getRAMUsage);
 
 module.exports = router;

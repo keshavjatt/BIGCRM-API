@@ -15,7 +15,7 @@ const assetSchema = new mongoose.Schema({
   status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
   lastDownTime: { type: Date, default: null },
   firstDownTime: { type: Date, default: null },
-  projectName: { type: String, required: true }, // New field added
+  projectName: { type: String, required: true },
 });
 
 assetSchema.statics.updateStatus = async function (linkId, newStatus) {

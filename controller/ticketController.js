@@ -1,7 +1,6 @@
 const Ticket = require("../model/ticketModel");
 const moment = require("moment");
 
-// Get all tickets
 const getAllTickets = async (req, res) => {
   try {
     const tickets = await Ticket.find({ projectName: req.user.projectName }); // Filter by projectName
@@ -12,10 +11,12 @@ const getAllTickets = async (req, res) => {
   }
 };
 
-// Get a single ticket by TicketNo
 const getSingleTicketByNo = async (req, res) => {
   try {
-    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo, projectName: req.user.projectName });
+    const ticket = await Ticket.findOne({
+      TicketNo: req.params.ticketNo,
+      projectName: req.user.projectName,
+    });
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -28,11 +29,13 @@ const getSingleTicketByNo = async (req, res) => {
   }
 };
 
-// Update a ticket by TicketNo
 const updateTicketByNo = async (req, res) => {
   try {
     // Fetch the ticket by TicketNo
-    const ticket = await Ticket.findOne({ TicketNo: req.params.ticketNo, projectName: req.user.projectName });
+    const ticket = await Ticket.findOne({
+      TicketNo: req.params.ticketNo,
+      projectName: req.user.projectName,
+    });
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -73,12 +76,11 @@ const updateTicketByNo = async (req, res) => {
   }
 };
 
-// Delete a ticket by TicketNo
 const deleteTicketByNo = async (req, res) => {
   try {
     const ticket = await Ticket.findOneAndDelete({
       TicketNo: req.params.ticketNo,
-      projectName: req.user.projectName
+      projectName: req.user.projectName,
     });
 
     if (!ticket) {
@@ -97,7 +99,7 @@ const getOpenTicketsCount = async (req, res) => {
   try {
     const openTicketsCount = await Ticket.countDocuments({
       Status: { $ne: "Closed" },
-      projectName: req.user.projectName
+      projectName: req.user.projectName,
     });
     res.json({ openTicketsCount });
   } catch (err) {
@@ -109,8 +111,71 @@ const getOpenTicketsCount = async (req, res) => {
 // Get count of pending tickets (status PENDING)
 const getPendingTicketsCount = async (req, res) => {
   try {
-    const pendingTicketsCount = await Ticket.countDocuments({ Status: "Pending", projectName: req.user.projectName });
+    const pendingTicketsCount = await Ticket.countDocuments({
+      Status: "Pending",
+      projectName: req.user.projectName,
+    });
     res.json({ pendingTicketsCount });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+// Get ticket counts for the last 15 days
+const getTicketsCountByDate = async (req, res) => {
+  try {
+    const projectName = req.user.projectName;
+
+    // Current date
+    const today = moment().startOf("day").toDate();
+    // Date 15 days ago
+    const fifteenDaysAgo = moment(today).subtract(15, "days").toDate();
+
+    const ticketsCountByDate = await Ticket.aggregate([
+      {
+        $match: {
+          projectName: projectName,
+          CreatedDate: { $gte: fifteenDaysAgo, $lte: today },
+        },
+      },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: "%d-%m-%Y",
+              date: { $toDate: "$CreatedDate" },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$date",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    // Format the data to include all dates in the range, even those with zero tickets
+    const datesArray = [];
+    for (let i = 0; i <= 15; i++) {
+      datesArray.push(
+        moment(fifteenDaysAgo).add(i, "days").format("DD-MM-YYYY")
+      );
+    }
+
+    const formattedResponse = datesArray.map((date) => {
+      const ticketData = ticketsCountByDate.find(
+        (ticket) => ticket._id === date
+      );
+      return { date, count: ticketData ? ticketData.count : 0 };
+    });
+
+    res.json(formattedResponse);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
@@ -124,4 +189,5 @@ module.exports = {
   deleteTicketByNo,
   getOpenTicketsCount,
   getPendingTicketsCount,
+  getTicketsCountByDate,
 };

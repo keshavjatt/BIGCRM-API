@@ -3,6 +3,7 @@ const Asset = require("../model/assetModel");
 const Ticket = require("../model/ticketModel.js");
 const sendEmail = require("../utils/mailer.js");
 const moment = require("moment");
+const os = require("os-utils");
 
 const pingIPAddress = async (ipAddress) => {
   try {
@@ -27,7 +28,6 @@ const formatDate = (date) => {
   return moment(date).format("DD-MM-YYYY hh:mm A");
 };
 
-// getAllUnreachableAssets function ko modify karte hain
 const getAllUnreachableAssets = async (req, res) => {
   try {
     const projectName = req.user.projectName;
@@ -143,7 +143,7 @@ const createAsset = async (req, res) => {
       linkBW,
       discoveryDate,
       emailId,
-      projectName
+      projectName,
     } = req.body;
 
     // Check if any field is empty
@@ -191,7 +191,10 @@ const getAllAssets = async (req, res) => {
 
 const getAssetByLinkId = async (req, res) => {
   try {
-    const asset = await Asset.findOne({ linkId: req.params.linkId, projectName: req.user.projectName });
+    const asset = await Asset.findOne({
+      linkId: req.params.linkId,
+      projectName: req.user.projectName,
+    });
 
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
@@ -225,7 +228,10 @@ const updateAssetByLinkId = async (req, res) => {
 
 const deleteAssetByLinkId = async (req, res) => {
   try {
-    const asset = await Asset.findOneAndDelete({ linkId: req.params.linkId, projectName: req.user.projectName });
+    const asset = await Asset.findOneAndDelete({
+      linkId: req.params.linkId,
+      projectName: req.user.projectName,
+    });
 
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
@@ -240,7 +246,9 @@ const deleteAssetByLinkId = async (req, res) => {
 
 const getAssetCount = async (req, res) => {
   try {
-    const count = await Asset.countDocuments({ projectName: req.user.projectName }); // Filter by projectName
+    const count = await Asset.countDocuments({
+      projectName: req.user.projectName,
+    }); // Filter by projectName
     res.json({ count });
   } catch (err) {
     console.error(err.message);
@@ -251,7 +259,10 @@ const getAssetCount = async (req, res) => {
 const getRunningAssetsCount = async (req, res) => {
   try {
     // Filter by projectName and status "Active"
-    const assets = await Asset.find({ status: "Active", projectName: req.user.projectName });
+    const assets = await Asset.find({
+      status: "Active",
+      projectName: req.user.projectName,
+    });
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -274,7 +285,10 @@ const getRunningAssetsCount = async (req, res) => {
 const getUnreachableAssetsCount = async (req, res) => {
   try {
     // Filter by projectName and status "Active"
-    const assets = await Asset.find({ status: "Active", projectName: req.user.projectName });
+    const assets = await Asset.find({
+      status: "Active",
+      projectName: req.user.projectName,
+    });
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -297,7 +311,10 @@ const getUnreachableAssetsCount = async (req, res) => {
 const getAnalytics = async (req, res) => {
   try {
     // Filter by projectName and status "Active"
-    const assets = await Asset.find({ status: "Active", projectName: req.user.projectName });
+    const assets = await Asset.find({
+      status: "Active",
+      projectName: req.user.projectName,
+    });
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -362,6 +379,21 @@ const updateAssetStatus = async (req, res) => {
   }
 };
 
+const getCPUUsage = async (req, res) => {
+  os.cpuUsage(function (v) {
+    res.json({ cpuUsage: (v * 100).toFixed(2) + "%" });
+  });
+};
+
+const getRAMUsage = async (req, res) => {
+  const totalMemory = os.totalmem();
+  const freeMemory = os.freemem();
+  const usedMemory = totalMemory - freeMemory;
+  const usedMemoryPercentage = ((usedMemory / totalMemory) * 100).toFixed(2);
+
+  res.json({ ramUsage: usedMemoryPercentage + "%" });
+};
+
 module.exports = {
   createAsset,
   getAllAssets,
@@ -374,4 +406,6 @@ module.exports = {
   getUnreachableAssetsCount,
   getAnalytics,
   updateAssetStatus,
+  getCPUUsage,
+  getRAMUsage,
 };

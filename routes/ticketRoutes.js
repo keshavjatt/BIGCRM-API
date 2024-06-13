@@ -7,6 +7,7 @@ const {
   deleteTicketByNo,
   getOpenTicketsCount,
   getPendingTicketsCount,
+  getTicketsCountByDate,
 } = require("../controller/ticketController");
 
 const router = express.Router();
@@ -18,5 +19,6 @@ router.put("/:ticketNo", auth, updateTicketByNo);
 router.delete("/:ticketNo", auth, deleteTicketByNo);
 router.get("/count/openTicket", auth, getOpenTicketsCount);
 router.get("/count/pendingTicket", auth, getPendingTicketsCount);
+router.get("/ticketsCountByDate", auth, getTicketsCountByDate);
 
 module.exports = router;
