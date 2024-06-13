@@ -5,9 +5,18 @@ require("dotenv").config();
 
 const registerUser = async (req, res) => {
   try {
-    const { name, mobileNo, empId, password, address, userRole, projectName } = req.body;
+    const { name, mobileNo, empId, password, address, userRole, projectName } =
+      req.body;
 
-    if (!name || !mobileNo || !empId || !password || !address || !userRole || !projectName) {
+    if (
+      !name ||
+      !mobileNo ||
+      !empId ||
+      !password ||
+      !address ||
+      !userRole ||
+      !projectName
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -48,29 +57,36 @@ const getAllUsers = async (req, res) => {
 };
 
 const getUserById = async (req, res) => {
-    try {
-      const user = await User.findOne({ _id: req.params.id, projectName: req.user.projectName });
+  try {
+    const user = await User.findOne({
+      _id: req.params.id,
+      projectName: req.user.projectName,
+    });
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      res.json(user);
-    } catch (err) {
-      console.error(err.message);
-      if (err.kind === "ObjectId") {
-        return res.status(404).json({ message: "User nahi mila" });
-      }
-      res.status(500).send("Server Error");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === "ObjectId") {
+      return res.status(404).json({ message: "User nahi mila" });
+    }
+    res.status(500).send("Server Error");
+  }
 };
 
 const updateUser = async (req, res) => {
   try {
-    const { name, mobileNo, empId, password, address, userRole, projectName } = req.body;
+    const { name, mobileNo, empId, password, address, userRole, projectName } =
+      req.body;
 
     // Check if user exists with the given projectName and ID
-    let user = await User.findOne({ _id: req.params.id, projectName: req.user.projectName });
+    let user = await User.findOne({
+      _id: req.params.id,
+      projectName: req.user.projectName,
+    });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -165,7 +181,9 @@ const loginUser = async (req, res) => {
 
 const getUserCount = async (req, res) => {
   try {
-    const count = await User.countDocuments({ projectName: req.user.projectName }); // Filter by projectName
+    const count = await User.countDocuments({
+      projectName: req.user.projectName,
+    }); // Filter by projectName
     res.json({ count });
   } catch (err) {
     console.error(err.message);
