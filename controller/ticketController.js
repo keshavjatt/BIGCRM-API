@@ -117,44 +117,6 @@ const getPendingTicketsCount = async (req, res) => {
   }
 };
 
-// Get ticket count for the last 15 days
-const getTicketCountsLast15Days = async (req, res) => {
-  try {
-    const today = moment().startOf('day');
-    const last15Days = Array.from({ length: 15 }, (v, i) => today.clone().subtract(i, 'days').format('DD-MM-YYYY'));
-
-    const ticketCounts = await Ticket.aggregate([
-      {
-        $match: {
-          CreatedDate: {
-            $gte: today.clone().subtract(14, 'days').toDate(),
-            $lte: today.toDate()
-          }
-        }
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%d-%m-%Y", date: "$CreatedDate" } },
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const countsByDate = last15Days.map(date => {
-      const countData = ticketCounts.find(tc => tc._id === date);
-      return {
-        date,
-        count: countData ? countData.count : 0
-      };
-    });
-
-    res.json(countsByDate);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-};
-
 module.exports = {
   getAllTickets,
   getSingleTicketByNo,
@@ -162,5 +124,4 @@ module.exports = {
   deleteTicketByNo,
   getOpenTicketsCount,
   getPendingTicketsCount,
-  getTicketCountsLast15Days
 };

@@ -167,7 +167,7 @@ const createAsset = async (req, res) => {
     // Check if linkId already exists
     const existingAsset = await Asset.findOne({ linkId });
     if (existingAsset) {
-      return res.status(400).json({ message: "Link ID already exists" });
+      return res.status(403).json({ message: "Link ID already exists" });
     }
 
     const asset = new Asset(req.body);
