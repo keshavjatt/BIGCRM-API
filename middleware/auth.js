@@ -13,13 +13,14 @@ module.exports = async function (req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.user;
 
-    // Fetch the user's project name from the database
+    // Fetch the user's project name and role from the database
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     req.user.projectName = user.projectName; // Add projectName to the request object
+    req.user.userRole = user.userRole; // Add userRole to the request object
     next();
   } catch (err) {
     res.status(401).json({ message: "Token is not valid" });

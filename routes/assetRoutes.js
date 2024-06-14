@@ -6,7 +6,7 @@ const {
   getAssetByLinkId,
   updateAssetByLinkId,
   deleteAssetByLinkId,
-  getAllUnreachableAssets,
+  MonitoringAssets,
   getAssetCount,
   getRunningAssetsCount,
   getUnreachableAssetsCount,
@@ -22,14 +22,14 @@ const router = express.Router();
 router.post("/addAsset", auth, createAsset);
 router.get("/count", auth, getAssetCount);
 router.get("/", auth, getAllAssets);
-router.get("/unreachableAssets", auth, getAllUnreachableAssets);
+router.get("/unreachableAssets", auth, MonitoringAssets);
 router.post("/updateStatus", auth, updateAssetStatus);
 router.get("/runningAssets", auth, getRunningAssetsCount);
 router.get("/unreachableAssets/count", auth, getUnreachableAssetsCount);
 router.get("/analytics", auth, getAnalytics);
 router.get("/:linkId", auth, getAssetByLinkId);
 router.delete("/:linkId", auth, deleteAssetByLinkId);
-router.put("/:linkId", auth, updateAssetByLinkId);
+router.put("/:linkId", updateAssetByLinkId);
 router.get("/cpu/usage", getCPUUsage); 
 router.get("/ram/usage", getRAMUsage);
 

@@ -3,7 +3,14 @@ const moment = require("moment");
 
 const getAllTickets = async (req, res) => {
   try {
-    const tickets = await Ticket.find({ projectName: req.user.projectName }); // Filter by projectName
+    let query = {};
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const tickets = await Ticket.find(query); // Filter by query
     res.json(tickets);
   } catch (err) {
     console.error(err.message);
@@ -13,10 +20,14 @@ const getAllTickets = async (req, res) => {
 
 const getSingleTicketByNo = async (req, res) => {
   try {
-    const ticket = await Ticket.findOne({
-      TicketNo: req.params.ticketNo,
-      projectName: req.user.projectName,
-    });
+    let query = { TicketNo: req.params.ticketNo };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const ticket = await Ticket.findOne(query);
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -31,11 +42,15 @@ const getSingleTicketByNo = async (req, res) => {
 
 const updateTicketByNo = async (req, res) => {
   try {
+    let query = { TicketNo: req.params.ticketNo };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
     // Fetch the ticket by TicketNo
-    const ticket = await Ticket.findOne({
-      TicketNo: req.params.ticketNo,
-      projectName: req.user.projectName,
-    });
+    const ticket = await Ticket.findOne(query);
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -78,10 +93,14 @@ const updateTicketByNo = async (req, res) => {
 
 const deleteTicketByNo = async (req, res) => {
   try {
-    const ticket = await Ticket.findOneAndDelete({
-      TicketNo: req.params.ticketNo,
-      projectName: req.user.projectName,
-    });
+    let query = { TicketNo: req.params.ticketNo };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const ticket = await Ticket.findOneAndDelete(query);
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -97,10 +116,14 @@ const deleteTicketByNo = async (req, res) => {
 // Get count of open tickets (excluding CLOSED status)
 const getOpenTicketsCount = async (req, res) => {
   try {
-    const openTicketsCount = await Ticket.countDocuments({
-      Status: { $ne: "Closed" },
-      projectName: req.user.projectName,
-    });
+    let query = { Status: { $ne: "Closed" } };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const openTicketsCount = await Ticket.countDocuments(query);
     res.json({ openTicketsCount });
   } catch (err) {
     console.error(err.message);
@@ -111,10 +134,14 @@ const getOpenTicketsCount = async (req, res) => {
 // Get count of pending tickets (status PENDING)
 const getPendingTicketsCount = async (req, res) => {
   try {
-    const pendingTicketsCount = await Ticket.countDocuments({
-      Status: "Pending",
-      projectName: req.user.projectName,
-    });
+    let query = { Status: "Pending" };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const pendingTicketsCount = await Ticket.countDocuments(query);
     res.json({ pendingTicketsCount });
   } catch (err) {
     console.error(err.message);
@@ -132,12 +159,19 @@ const getTicketsCountByDate = async (req, res) => {
     // Date 15 days ago
     const fifteenDaysAgo = moment(today).subtract(15, "days").toDate();
 
+    let matchQuery = {
+      projectName: projectName,
+      CreatedDate: { $gte: fifteenDaysAgo, $lte: today },
+    };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      matchQuery.projectName = req.user.projectName;
+    }
+
     const ticketsCountByDate = await Ticket.aggregate([
       {
-        $match: {
-          projectName: projectName,
-          CreatedDate: { $gte: fifteenDaysAgo, $lte: today },
-        },
+        $match: matchQuery,
       },
       {
         $project: {
