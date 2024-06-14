@@ -46,91 +46,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find({ projectName: req.user.projectName }); // Filter by projectName
-    res.json(users);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-};
-
-const getUserById = async (req, res) => {
-  try {
-    const user = await User.findOne({
-      _id: req.params.id,
-      projectName: req.user.projectName,
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    if (err.kind === "ObjectId") {
-      return res.status(404).json({ message: "User nahi mila" });
-    }
-    res.status(500).send("Server Error");
-  }
-};
-
-const updateUser = async (req, res) => {
-  try {
-    const { name, mobileNo, empId, password, address, userRole, projectName } =
-      req.body;
-
-    // Check if user exists with the given projectName and ID
-    let user = await User.findOne({
-      _id: req.params.id,
-      projectName: req.user.projectName,
-    });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Update fields
-    user.name = name;
-    user.mobileNo = mobileNo;
-    user.empId = empId;
-    user.address = address;
-    user.userRole = userRole;
-    user.projectName = projectName;
-
-    // If password is being updated, hash it
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
-    }
-
-    await user.save();
-
-    res.json({ message: "User successfully updated", user });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-};
-
-const deleteUser = async (req, res) => {
-  try {
-    // Filter by projectName and user ID
-    const deletedUser = await User.findOneAndDelete({
-      _id: req.params.id,
-      projectName: req.user.projectName,
-    });
-    if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json({ message: "User deleted succesfully" });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-};
-
 const loginUser = async (req, res) => {
   try {
     const { empId, password } = req.body;
@@ -179,11 +94,110 @@ const loginUser = async (req, res) => {
   }
 };
 
+const getAllUsers = async (req, res) => {
+  try {
+    const filter = req.user.userRole === 'Admin' ? {} : { projectName: req.user.projectName };
+    const users = await User.find(filter);
+    res.json(users); // Send the users array as JSON response
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+const getUserById = async (req, res) => {
+  try {
+    const filter = req.user.userRole === 'Admin' ? { _id: req.params.id } : { _id: req.params.id, projectName: req.user.projectName };
+    const user = await User.findOne(filter);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === "ObjectId") {
+      return res.status(404).json({ message: "User nahi mila" });
+    }
+    res.status(500).send("Server Error");
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { name, mobileNo, empId, password, address, userRole, projectName } = req.body;
+
+    let query = { _id: req.params.id };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    // Check if user exists with the given projectName and ID
+    let user = await User.findOne(query);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update fields
+    user.name = name;
+    user.mobileNo = mobileNo;
+    user.empId = empId;
+    user.address = address;
+    user.userRole = userRole;
+    user.projectName = projectName;
+
+    // If password is being updated, hash it
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+    }
+
+    await user.save();
+
+    res.json({ message: "User successfully updated", user });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    let query = { _id: req.params.id };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    // Filter by projectName and user ID
+    const deletedUser = await User.findOneAndDelete(query);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
 const getUserCount = async (req, res) => {
   try {
-    const count = await User.countDocuments({
-      projectName: req.user.projectName,
-    }); // Filter by projectName
+    let query = {};
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const count = await User.countDocuments(query);
+
     res.json({ count });
   } catch (err) {
     console.error(err.message);

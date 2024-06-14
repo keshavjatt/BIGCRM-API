@@ -28,10 +28,11 @@ const formatDate = (date) => {
   return moment(date).format("DD-MM-YYYY hh:mm A");
 };
 
-const getAllUnreachableAssets = async (req, res) => {
+const MonitoringAssets = async (req, res) => {
   try {
     const projectName = req.user.projectName;
-    const assets = await Asset.find({ status: "Active", projectName });
+    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const assets = await Asset.find(filter);
 
     const pingPromises = assets.map((asset) => pingIPAddress(asset.ipAddress1));
     const pingResults = await Promise.all(pingPromises);
@@ -81,7 +82,7 @@ const getAllUnreachableAssets = async (req, res) => {
             AssignedBy: "N/A",
             LastUpdateBy: "N/A",
             LastUpdateDate: null,
-            projectName: projectName, // Pass projectName from asset
+            projectName: asset.projectName, // Use projectName from asset
             Status: ticketStatus,
           });
           const savedTicket = await ticket.save();
@@ -181,7 +182,8 @@ const createAsset = async (req, res) => {
 
 const getAllAssets = async (req, res) => {
   try {
-    const assets = await Asset.find({ projectName: req.user.projectName }); // Filter by projectName
+    const filter = req.user.userRole === 'Admin' ? {} : { projectName: req.user.projectName };
+    const assets = await Asset.find(filter);
     res.json(assets);
   } catch (err) {
     console.error(err.message);
@@ -191,10 +193,14 @@ const getAllAssets = async (req, res) => {
 
 const getAssetByLinkId = async (req, res) => {
   try {
-    const asset = await Asset.findOne({
-      linkId: req.params.linkId,
-      projectName: req.user.projectName,
-    });
+    let query = { linkId: req.params.linkId };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const asset = await Asset.findOne(query);
 
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
@@ -209,8 +215,15 @@ const getAssetByLinkId = async (req, res) => {
 
 const updateAssetByLinkId = async (req, res) => {
   try {
+    let query = { linkId: req.params.linkId };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
     const asset = await Asset.findOneAndUpdate(
-      { linkId: req.params.linkId, projectName: req.user.projectName }, // Filter by linkId and projectName
+      query, // Filter by linkId and conditionally projectName
       { $set: req.body },
       { new: true }
     );
@@ -228,10 +241,14 @@ const updateAssetByLinkId = async (req, res) => {
 
 const deleteAssetByLinkId = async (req, res) => {
   try {
-    const asset = await Asset.findOneAndDelete({
-      linkId: req.params.linkId,
-      projectName: req.user.projectName,
-    });
+    let query = { linkId: req.params.linkId };
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const asset = await Asset.findOneAndDelete(query);
 
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
@@ -246,9 +263,14 @@ const deleteAssetByLinkId = async (req, res) => {
 
 const getAssetCount = async (req, res) => {
   try {
-    const count = await Asset.countDocuments({
-      projectName: req.user.projectName,
-    }); // Filter by projectName
+    let query = {};
+
+    // Agar user ka role 'Executive' hai to projectName ke according filter karein
+    if (req.user.userRole !== 'Admin') {
+      query.projectName = req.user.projectName;
+    }
+
+    const count = await Asset.countDocuments(query); // Filter by query
     res.json({ count });
   } catch (err) {
     console.error(err.message);
@@ -258,11 +280,8 @@ const getAssetCount = async (req, res) => {
 
 const getRunningAssetsCount = async (req, res) => {
   try {
-    // Filter by projectName and status "Active"
-    const assets = await Asset.find({
-      status: "Active",
-      projectName: req.user.projectName,
-    });
+    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const assets = await Asset.find(filter);
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -284,11 +303,8 @@ const getRunningAssetsCount = async (req, res) => {
 
 const getUnreachableAssetsCount = async (req, res) => {
   try {
-    // Filter by projectName and status "Active"
-    const assets = await Asset.find({
-      status: "Active",
-      projectName: req.user.projectName,
-    });
+    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const assets = await Asset.find(filter);
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -310,11 +326,8 @@ const getUnreachableAssetsCount = async (req, res) => {
 
 const getAnalytics = async (req, res) => {
   try {
-    // Filter by projectName and status "Active"
-    const assets = await Asset.find({
-      status: "Active",
-      projectName: req.user.projectName,
-    });
+    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const assets = await Asset.find(filter);
 
     // Parallelize ping requests
     const pingPromises = assets.map((asset) =>
@@ -400,7 +413,7 @@ module.exports = {
   getAssetByLinkId,
   updateAssetByLinkId,
   deleteAssetByLinkId,
-  getAllUnreachableAssets,
+  MonitoringAssets,
   getAssetCount,
   getRunningAssetsCount,
   getUnreachableAssetsCount,
