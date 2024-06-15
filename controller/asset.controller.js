@@ -1,7 +1,7 @@
 const ping = require("ping");
-const Asset = require("../model/assetModel");
-const Ticket = require("../model/ticketModel.js");
-const sendEmail = require("../utils/mailer.js");
+const Asset = require("../model/asset.model.js");
+const Ticket = require("../model/ticket.model.js");
+const sendEmail = require("../utils/mailer.utils.js");
 const moment = require("moment");
 const os = require("os-utils");
 
@@ -31,7 +31,10 @@ const formatDate = (date) => {
 const MonitoringAssets = async (req, res) => {
   try {
     const projectName = req.user.projectName;
-    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? { status: "Active" }
+        : { status: "Active", projectName: req.user.projectName };
     const assets = await Asset.find(filter);
 
     const pingPromises = assets.map((asset) => pingIPAddress(asset.ipAddress1));
@@ -108,7 +111,7 @@ const MonitoringAssets = async (req, res) => {
 
         emailList.forEach((email) => {
           emailPromises.push(
-            sendEmail(email, subject, asset.linkId, asset.ipAddress1, ticketNo)
+            sendEmail(email, subject, asset.linkId, asset.ipAddress1, ticketNo, asset.projectName)
           );
         });
       }
@@ -182,7 +185,10 @@ const createAsset = async (req, res) => {
 
 const getAllAssets = async (req, res) => {
   try {
-    const filter = req.user.userRole === 'Admin' ? {} : { projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? {}
+        : { projectName: req.user.projectName };
     const assets = await Asset.find(filter);
     res.json(assets);
   } catch (err) {
@@ -196,7 +202,7 @@ const getAssetByLinkId = async (req, res) => {
     let query = { linkId: req.params.linkId };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -218,7 +224,7 @@ const updateAssetByLinkId = async (req, res) => {
     let query = { linkId: req.params.linkId };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -244,7 +250,7 @@ const deleteAssetByLinkId = async (req, res) => {
     let query = { linkId: req.params.linkId };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -266,7 +272,7 @@ const getAssetCount = async (req, res) => {
     let query = {};
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -280,7 +286,10 @@ const getAssetCount = async (req, res) => {
 
 const getRunningAssetsCount = async (req, res) => {
   try {
-    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? { status: "Active" }
+        : { status: "Active", projectName: req.user.projectName };
     const assets = await Asset.find(filter);
 
     // Parallelize ping requests
@@ -303,7 +312,10 @@ const getRunningAssetsCount = async (req, res) => {
 
 const getUnreachableAssetsCount = async (req, res) => {
   try {
-    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? { status: "Active" }
+        : { status: "Active", projectName: req.user.projectName };
     const assets = await Asset.find(filter);
 
     // Parallelize ping requests
@@ -326,7 +338,10 @@ const getUnreachableAssetsCount = async (req, res) => {
 
 const getAnalytics = async (req, res) => {
   try {
-    const filter = req.user.userRole === 'Admin' ? { status: "Active" } : { status: "Active", projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? { status: "Active" }
+        : { status: "Active", projectName: req.user.projectName };
     const assets = await Asset.find(filter);
 
     // Parallelize ping requests

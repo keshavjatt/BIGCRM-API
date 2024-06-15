@@ -1,4 +1,4 @@
-const Ticket = require("../model/ticketModel");
+const Ticket = require("../model/ticket.model");
 const moment = require("moment");
 
 const getAllTickets = async (req, res) => {
@@ -6,7 +6,7 @@ const getAllTickets = async (req, res) => {
     let query = {};
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -23,7 +23,7 @@ const getSingleTicketByNo = async (req, res) => {
     let query = { TicketNo: req.params.ticketNo };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -45,7 +45,7 @@ const updateTicketByNo = async (req, res) => {
     let query = { TicketNo: req.params.ticketNo };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -96,7 +96,7 @@ const deleteTicketByNo = async (req, res) => {
     let query = { TicketNo: req.params.ticketNo };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -119,7 +119,7 @@ const getOpenTicketsCount = async (req, res) => {
     let query = { Status: { $ne: "Closed" } };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -137,7 +137,7 @@ const getPendingTicketsCount = async (req, res) => {
     let query = { Status: "Pending" };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -165,7 +165,7 @@ const getTicketsCountByDate = async (req, res) => {
     };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       matchQuery.projectName = req.user.projectName;
     }
 

@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const createEmailBody = (linkId, ipAddress, ticketNo) => {
+const createEmailBody = (linkId, ipAddress, ticketNo, projectName) => {
   const currentDateTime = new Date().toLocaleString();
   return `
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
@@ -22,14 +22,14 @@ const createEmailBody = (linkId, ipAddress, ticketNo) => {
         <table style="margin: 0 auto; max-width: 600px; text-align: left;">
           <tr>
             <td style="padding: 10px;">
-              <p style="color: black;"><span style="font-weight: bold; color: black;">Project ID :</span> SD-WAN INDRAPRASTHA GAS LTD</p>
+              <p style="color: black;"><span style="font-weight: bold; color: black;">Project ID :</span> ${projectName}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Link ID :</span> ${linkId}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">IP Address 1 :</span> ${ipAddress}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Ticket No:</span> ${ticketNo}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Date :</span> ${currentDateTime}</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Problem Code :</span> LINK DOWN</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Ticket Status :</span> Pending</p>
-              <p style="color: black;"><span style="font-weight: bold; color: black;">Created by :</span> CRM</p>
+              <p style="color: black;"><span style="font-weight: bold; color: black;">Created by :</span> BIGCRM<sup>®</sup></p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Description :</span> Auto Ticketing system@</p>
               <p style="color: black;"><span style="font-weight: bold; color: black;">Service Update :</span></p>
             </td>
@@ -43,8 +43,8 @@ const createEmailBody = (linkId, ipAddress, ticketNo) => {
   `;
 };
 
-const sendEmail = (to, subject, linkId, ipAddress, ticketNo) => {
-  const htmlContent = createEmailBody(linkId, ipAddress, ticketNo);
+const sendEmail = (to, subject, linkId, ipAddress, ticketNo, projectName) => {
+  const htmlContent = createEmailBody(linkId, ipAddress, ticketNo, projectName);
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: to,

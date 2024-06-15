@@ -1,10 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const connectDB = require("./config/db");
-const userRoutes = require("./routes/userRoutes");
-const assetRoutes = require("./routes/assetRoutes");
-const ticketRoutes = require("./routes/ticketRoutes");
-const pingRoutes = require("./routes/pingRoutes");
+const connectDB = require("./config/db.config");
+const userRoutes = require("./routes/user.routes");
+const assetRoutes = require("./routes/asset.routes");
+const ticketRoutes = require("./routes/ticket.routes");
+const pingRoutes = require("./routes/ping.routes");
 const cors = require("cors");
 require("dotenv").config();
 
