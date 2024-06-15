@@ -1,5 +1,5 @@
 const express = require("express");
-const auth = require("../middleware/auth");
+const auth = require("../middleware/auth.middleware");
 const {
   createAsset,
   getAllAssets,
@@ -14,7 +14,7 @@ const {
   updateAssetStatus,
   getCPUUsage,
   getRAMUsage,
-} = require("../controller/assetController");
+} = require("../controller/asset.controller");
 
 const router = express.Router();
 
@@ -29,8 +29,8 @@ router.get("/unreachableAssets/count", auth, getUnreachableAssetsCount);
 router.get("/analytics", auth, getAnalytics);
 router.get("/:linkId", auth, getAssetByLinkId);
 router.delete("/:linkId", auth, deleteAssetByLinkId);
-router.put("/:linkId", updateAssetByLinkId);
-router.get("/cpu/usage", getCPUUsage); 
+router.put("/:linkId", auth, updateAssetByLinkId);
+router.get("/cpu/usage", getCPUUsage);
 router.get("/ram/usage", getRAMUsage);
 
 module.exports = router;

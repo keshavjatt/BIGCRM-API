@@ -1,5 +1,5 @@
 const express = require("express");
-const auth = require("../middleware/auth");
+const auth = require("../middleware/auth.middleware");
 const {
   getAllTickets,
   getSingleTicketByNo,
@@ -8,7 +8,7 @@ const {
   getOpenTicketsCount,
   getPendingTicketsCount,
   getTicketsCountByDate,
-} = require("../controller/ticketController");
+} = require("../controller/ticket.controller");
 
 const router = express.Router();
 

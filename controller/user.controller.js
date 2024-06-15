@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../model/userModel");
+const User = require("../model/user.model");
 require("dotenv").config();
 
 const registerUser = async (req, res) => {
@@ -96,7 +96,10 @@ const loginUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const filter = req.user.userRole === 'Admin' ? {} : { projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? {}
+        : { projectName: req.user.projectName };
     const users = await User.find(filter);
     res.json(users); // Send the users array as JSON response
   } catch (err) {
@@ -107,7 +110,10 @@ const getAllUsers = async (req, res) => {
 
 const getUserById = async (req, res) => {
   try {
-    const filter = req.user.userRole === 'Admin' ? { _id: req.params.id } : { _id: req.params.id, projectName: req.user.projectName };
+    const filter =
+      req.user.userRole === "Admin"
+        ? { _id: req.params.id }
+        : { _id: req.params.id, projectName: req.user.projectName };
     const user = await User.findOne(filter);
 
     if (!user) {
@@ -126,12 +132,13 @@ const getUserById = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { name, mobileNo, empId, password, address, userRole, projectName } = req.body;
+    const { name, mobileNo, empId, password, address, userRole, projectName } =
+      req.body;
 
     let query = { _id: req.params.id };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -169,7 +176,7 @@ const deleteUser = async (req, res) => {
     let query = { _id: req.params.id };
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 
@@ -192,7 +199,7 @@ const getUserCount = async (req, res) => {
     let query = {};
 
     // Agar user ka role 'Executive' hai to projectName ke according filter karein
-    if (req.user.userRole !== 'Admin') {
+    if (req.user.userRole !== "Admin") {
       query.projectName = req.user.projectName;
     }
 

@@ -14,14 +14,14 @@ const ticketSchema = new mongoose.Schema({
   RFO: { type: String, default: "N/A" },
   AssignedBy: { type: String, default: "N/A" },
   CreatedBy: { type: String, default: "CRM" },
-  CreatedDate: { type: String, default: moment().format("DD-MM-YYYY hh:mm A") }, // Format date here
+  CreatedDate: { type: String }, 
   LastUpdateBy: { type: String, default: "N/A" },
   LastUpdateDate: { type: String, default: null },
   projectName: { type: String, required: true },
   updates: { type: Array, default: [] },
 });
 
-// Pre-save hook to format the CreatedDate before saving
+// Pre-save hook to set the CreatedDate before saving
 ticketSchema.pre("save", function (next) {
   if (!this.CreatedDate) {
     this.CreatedDate = moment().format("DD-MM-YYYY hh:mm A");
