@@ -16,7 +16,9 @@ const createEmailBody = (linkId, ipAddress, ticketNo, projectName) => {
   return `
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
       <div style="text-align: center;">
-        <img src="cid:headerImage" alt="Header Image" style="width: 100%; max-width: 600px;"/>
+        <a href="https://xsoldata.com/" target="_blank">
+          <img src="cid:headerImage" alt="Header Image" style="width: 100%; max-width: 600px;"/>
+        </a>
       </div>
       <div style="padding: 20px; text-align: center;">
         <table style="margin: 0 auto; max-width: 600px; text-align: left;">
@@ -37,7 +39,9 @@ const createEmailBody = (linkId, ipAddress, ticketNo, projectName) => {
         </table>
       </div>
       <div style="text-align: center;">
-        <img src="cid:footerImage" alt="Footer Image" style="width: 100%; max-width: 600px;"/>
+        <a href="https://xsoldata.com/" target="_blank">
+          <img src="cid:footerImage" alt="Footer Image" style="width: 100%; max-width: 600px;"/>
+        </a>
       </div>
     </div>
   `;
