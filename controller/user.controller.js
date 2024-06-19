@@ -67,11 +67,11 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Create payload for JWT with projectName from user object
+    // Create payload for JWT
     const payload = {
       user: {
         id: user.id,
-        projectName: user.projectName, // Include project name in the token
+        projectName: user.projectName,
       },
     };
 
@@ -85,6 +85,14 @@ const loginUser = async (req, res) => {
         res.json({
           message: "User logged in successfully",
           token,
+          user: {
+            name: user.name,
+            mobileNo: user.mobileNo,
+            empId: user.empId,
+            address: user.address,
+            userRole: user.userRole,
+            projectName: user.projectName,
+          },
         });
       }
     );
