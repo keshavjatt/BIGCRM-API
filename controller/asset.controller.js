@@ -16,11 +16,11 @@ const pingIPAddress = async (ipAddress) => {
 };
 
 // Helper function to generate ticket number
-let currentSrNo = 1;
-const generateTicketNo = () => {
-  const ticketNo = `SR#${currentSrNo.toString().padStart(3, "0")}`;
-  currentSrNo++;
-  return ticketNo;
+const generateTicketNo = async () => {
+  const latestTicket = await Ticket.findOne().sort({ SrNo: -1 }).exec();
+  const newSrNo = latestTicket ? latestTicket.SrNo + 1 : 1;
+  const ticketNo = `SR#${newSrNo.toString().padStart(3, "0")}`;
+  return { newSrNo, ticketNo };
 };
 
 // Format date helper function
@@ -76,20 +76,20 @@ const MonitoringAssets = async (req, res) => {
           await existingTicket.save();
           ticketNo = existingTicket.TicketNo;
         } else {
+          const { newSrNo, ticketNo } = await generateTicketNo();
           const ticket = new Ticket({
-            SrNo: currentSrNo,
-            TicketNo: generateTicketNo(),
+            SrNo: newSrNo,
+            TicketNo: ticketNo,
             SiteName: asset.siteName,
             LinkId: asset.linkId,
             Down_Timer: downtime,
             AssignedBy: "N/A",
             LastUpdateBy: "N/A",
             LastUpdateDate: null,
-            projectName: asset.projectName, // Use projectName from asset
+            projectName: asset.projectName,
             Status: ticketStatus,
           });
           const savedTicket = await ticket.save();
-          ticketNo = savedTicket.TicketNo;
           ticketPromises.push(savedTicket);
         }
 
@@ -111,7 +111,14 @@ const MonitoringAssets = async (req, res) => {
 
         emailList.forEach((email) => {
           emailPromises.push(
-            sendEmail(email, subject, asset.linkId, asset.ipAddress1, ticketNo, asset.projectName)
+            sendEmail(
+              email,
+              subject,
+              asset.linkId,
+              asset.ipAddress1,
+              ticketNo,
+              asset.projectName
+            )
           );
         });
       }
