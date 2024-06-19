@@ -136,7 +136,6 @@ const MonitoringAssets = async (req, res) => {
 const createAsset = async (req, res) => {
   try {
     const {
-      linkId,
       siteName,
       address,
       modelMake,
@@ -152,7 +151,6 @@ const createAsset = async (req, res) => {
 
     // Check if any field is empty
     if (
-      !linkId ||
       !siteName ||
       !address ||
       !modelMake ||
@@ -168,13 +166,28 @@ const createAsset = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if linkId already exists
-    const existingAsset = await Asset.findOne({ linkId });
-    if (existingAsset) {
-      return res.status(403).json({ message: "Link ID already exists" });
+    // Fetch the highest linkId and generate a new one
+    const highestAsset = await Asset.findOne().sort({ linkId: -1 }).exec();
+    let newLinkId = 24001; // Default value if no assets found
+    if (highestAsset) {
+      newLinkId = parseInt(highestAsset.linkId) + 1;
     }
 
-    const asset = new Asset(req.body);
+    const asset = new Asset({
+      linkId: newLinkId.toString(),
+      siteName,
+      address,
+      modelMake,
+      serialNo,
+      ipAddress1,
+      ipAddress2,
+      connectivity,
+      linkBW,
+      discoveryDate,
+      emailId,
+      projectName,
+    });
+
     await asset.save();
     res.status(201).json({ message: "Asset Added successfully" });
   } catch (err) {
