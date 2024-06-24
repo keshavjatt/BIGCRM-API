@@ -25,7 +25,7 @@ const generateTicketNo = async () => {
 
 // Format date helper function
 const formatDate = (date) => {
-  return moment(date).format("DD-MM-YYYY hh:mm A");
+  return moment(date).format("DD-MM-YYYY HH:mm");
 };
 
 const MonitoringAssets = async (req, res) => {
@@ -49,6 +49,8 @@ const MonitoringAssets = async (req, res) => {
       const asset = assets[i];
       const isReachable = pingResults[i];
 
+      const existingTicket = await Ticket.findOne({ LinkId: asset.linkId });
+
       if (!isReachable) {
         let downtime = "00:00:00";
 
@@ -66,7 +68,6 @@ const MonitoringAssets = async (req, res) => {
           asset.firstDownTime = new Date();
         }
 
-        const existingTicket = await Ticket.findOne({ LinkId: asset.linkId });
         let ticketStatus = "Pending";
         let ticketNo = null;
 
@@ -76,13 +77,15 @@ const MonitoringAssets = async (req, res) => {
           await existingTicket.save();
           ticketNo = existingTicket.TicketNo;
         } else {
-          const { newSrNo, ticketNo } = await generateTicketNo();
+          const { newSrNo, ticketNo: newTicketNo } = await generateTicketNo();
+          ticketNo = newTicketNo;
           const ticket = new Ticket({
             SrNo: newSrNo,
             TicketNo: ticketNo,
             SiteName: asset.siteName,
             LinkId: asset.linkId,
             Down_Timer: downtime,
+            Up_Timer: "00:00:00", // Initialize Up_Timer when ticket is first created
             AssignedBy: "N/A",
             LastUpdateBy: "N/A",
             LastUpdateDate: null,
@@ -103,29 +106,62 @@ const MonitoringAssets = async (req, res) => {
           TicketStatus: ticketStatus,
         });
 
+        const currentTime = new Date();
+        const lastEmailSentTime = asset.lastEmailSentTime
+          ? new Date(asset.lastEmailSentTime)
+          : null;
+        const emailTimeDiff = lastEmailSentTime
+          ? (currentTime - lastEmailSentTime) / 3600000
+          : null;
+
+        if (!lastEmailSentTime || emailTimeDiff >= 1) {
+          const emailList = asset.emailId.split(", ");
+          const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
+
+          // Use async/await here
+          emailList.forEach(async (email) => {
+            try {
+              await sendEmail(
+                email,
+                subject,
+                asset.linkId,
+                asset.ipAddress1,
+                ticketNo, // Ensure ticketNo is passed correctly
+                asset.projectName
+              );
+            } catch (error) {
+              console.error("Error sending email:", error);
+            }
+          });
+
+          asset.lastEmailSentTime = new Date(); // Update last email sent time
+        }
+
         asset.lastDownTime = new Date();
         updatePromises.push(asset.save());
+      } else {
+        // Asset is reachable
+        if (asset.firstDownTime && existingTicket) {
+          const firstDownTime = new Date(asset.firstDownTime);
+          const currentTime = new Date();
+          const diff = currentTime - firstDownTime;
+          const hours = Math.floor(diff / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          const seconds = Math.floor((diff % 60000) / 1000);
+          const downtime = `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-        const emailList = asset.emailId.split(", ");
-        const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
+          existingTicket.Up_Timer = downtime;
+          await existingTicket.save();
+        }
 
-        emailList.forEach((email) => {
-          emailPromises.push(
-            sendEmail(
-              email,
-              subject,
-              asset.linkId,
-              asset.ipAddress1,
-              ticketNo,
-              asset.projectName
-            )
-          );
-        });
+        asset.firstDownTime = null; // Reset firstDownTime when asset is up
+        updatePromises.push(asset.save());
       }
     }
 
     await Promise.all(updatePromises);
-    await Promise.all(emailPromises);
     await Promise.all(ticketPromises);
 
     const formattedTickets = unreachableAssets.map((ticket) => ({
