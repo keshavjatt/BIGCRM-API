@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
+const moment = require("moment");
 require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
@@ -12,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const createEmailBody = (linkId, ipAddress, ticketNo, projectName) => {
-  const currentDateTime = new Date().toLocaleString();
+  const currentDateTime = moment().format("DD-MM-YYYY HH:mm");
   return `
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
       <div style="text-align: center;">
@@ -48,32 +49,41 @@ const createEmailBody = (linkId, ipAddress, ticketNo, projectName) => {
 };
 
 const sendEmail = (to, subject, linkId, ipAddress, ticketNo, projectName) => {
-  const htmlContent = createEmailBody(linkId, ipAddress, ticketNo, projectName);
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: to,
-    subject: subject,
-    html: htmlContent,
-    attachments: [
-      {
-        filename: "header.png",
-        path: path.join(__dirname, "..", "images", "header.png"),
-        cid: "headerImage",
-      },
-      {
-        filename: "footer.png",
-        path: path.join(__dirname, "..", "images", "footer.png"),
-        cid: "footerImage",
-      },
-    ],
-  };
+  return new Promise((resolve, reject) => {
+    const htmlContent = createEmailBody(
+      linkId,
+      ipAddress,
+      ticketNo,
+      projectName
+    );
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: to,
+      subject: subject,
+      html: htmlContent,
+      attachments: [
+        {
+          filename: "header.png",
+          path: path.join(__dirname, "..", "images", "header.png"),
+          cid: "headerImage",
+        },
+        {
+          filename: "footer.png",
+          path: path.join(__dirname, "..", "images", "footer.png"),
+          cid: "footerImage",
+        },
+      ],
+    };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log("Error sending email:", error);
-    } else {
-      console.log("Email sent:", info.response);
-    }
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending email:", error);
+        reject(error);
+      } else {
+        console.log("Email sent:", info.response);
+        resolve(info);
+      }
+    });
   });
 };
 

@@ -56,8 +56,8 @@ const updateTicketByNo = async (req, res) => {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
-    // Get current date and time formatted as 'DD-MM-YYYY hh:mm A'
-    const currentDateTime = moment().format("DD-MM-YYYY hh:mm A");
+    // Get current date and time formatted as 'DD-MM-YYYY HH:mm'
+    const currentDateTime = moment().format("DD-MM-YYYY HH:mm");
 
     // Define the fields to be updated including current date and time
     const updateFields = {

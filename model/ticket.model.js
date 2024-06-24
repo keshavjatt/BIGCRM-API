@@ -24,7 +24,7 @@ const ticketSchema = new mongoose.Schema({
 // Pre-save hook to set the CreatedDate before saving
 ticketSchema.pre("save", function (next) {
   if (!this.CreatedDate) {
-    this.CreatedDate = moment().format("DD-MM-YYYY hh:mm A");
+    this.CreatedDate = moment().format("DD-MM-YYYY HH:mm");
   }
   next();
 });
