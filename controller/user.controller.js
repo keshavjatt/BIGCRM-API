@@ -35,6 +35,7 @@ const registerUser = async (req, res) => {
       address,
       userRole,
       projectName,
+      status: "Active",
     });
 
     await user.save();
@@ -50,24 +51,24 @@ const loginUser = async (req, res) => {
   try {
     const { empId, password } = req.body;
 
-    // Check if empId and password are provided
     if (!empId || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Find user by empId
     const user = await User.findOne({ empId });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Check if the password matches
+    if (user.status === "Block") {
+      return res.status(403).json({ message: "You are blocked" });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Create payload for JWT
     const payload = {
       user: {
         id: user.id,
@@ -75,7 +76,6 @@ const loginUser = async (req, res) => {
       },
     };
 
-    // Sign JWT and send it to the client
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -220,6 +220,30 @@ const getUserCount = async (req, res) => {
   }
 };
 
+const updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["Active", "Block"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.status = status;
+    await user.save();
+
+    res.json({ message: "User status updated successfully", user });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
 module.exports = {
   registerUser,
   getAllUsers,
@@ -228,4 +252,5 @@ module.exports = {
   deleteUser,
   loginUser,
   getUserCount,
+  updateUserStatus,
 };
