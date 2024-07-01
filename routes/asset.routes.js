@@ -12,6 +12,7 @@ const {
   getUnreachableAssetsCount,
   getAnalytics,
   updateAssetStatus,
+  updateAllEmailNotifications,
   getCPUUsage,
   getRAMUsage,
 } = require("../controller/asset.controller");
@@ -30,6 +31,7 @@ router.get("/analytics", auth, getAnalytics);
 router.get("/:linkId", auth, getAssetByLinkId);
 router.delete("/:linkId", auth, deleteAssetByLinkId);
 router.put("/:linkId", auth, updateAssetByLinkId);
+router.post("/updateAllEmailNotifications", auth, updateAllEmailNotifications);
 router.get("/cpu/usage", getCPUUsage);
 router.get("/ram/usage", getRAMUsage);
 

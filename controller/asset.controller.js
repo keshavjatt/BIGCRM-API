@@ -114,11 +114,13 @@ const MonitoringAssets = async (req, res) => {
           ? (currentTime - lastEmailSentTime) / 3600000
           : null;
 
-        if (!lastEmailSentTime || emailTimeDiff >= 1) {
+        if (
+          asset.emailNotifications && // Yaha emailNotifications status check karna
+          (!lastEmailSentTime || emailTimeDiff >= 1)
+        ) {
           const emailList = asset.emailId.split(", ");
           const subject = `Alert: Asset with linkId ${asset.linkId} is unreachable`;
 
-          // Use async/await here
           emailList.forEach(async (email) => {
             try {
               await sendEmail(
@@ -126,7 +128,7 @@ const MonitoringAssets = async (req, res) => {
                 subject,
                 asset.linkId,
                 asset.ipAddress1,
-                ticketNo, // Ensure ticketNo is passed correctly
+                ticketNo,
                 asset.projectName
               );
             } catch (error) {
@@ -134,7 +136,7 @@ const MonitoringAssets = async (req, res) => {
             }
           });
 
-          asset.lastEmailSentTime = new Date(); // Update last email sent time
+          asset.lastEmailSentTime = new Date();
         }
 
         asset.lastDownTime = new Date();
@@ -156,7 +158,7 @@ const MonitoringAssets = async (req, res) => {
           await existingTicket.save();
         }
 
-        asset.firstDownTime = null; // Reset firstDownTime when asset is up
+        asset.firstDownTime = null;
         updatePromises.push(asset.save());
       }
     }
@@ -463,6 +465,30 @@ const updateAssetStatus = async (req, res) => {
   }
 };
 
+const updateAllEmailNotifications = async (req, res) => {
+  try {
+    const { emailNotifications } = req.body;
+
+    const result = await Asset.updateMany({}, { emailNotifications });
+
+    // Retrieve all assets after the update
+    const assets = await Asset.find({});
+
+    res.json({
+      message: "Email notifications status updated successfully for all assets",
+      assets,
+    });
+  } catch (error) {
+    console.error(
+      "Error while updating email notifications status for all assets:",
+      error
+    );
+    res
+      .status(500)
+      .send("Error while updating email notifications status for all assets");
+  }
+};
+
 const getCPUUsage = async (req, res) => {
   os.cpuUsage(function (v) {
     res.json({ cpuUsage: (v * 100).toFixed(2) + "%" });
@@ -490,6 +516,7 @@ module.exports = {
   getUnreachableAssetsCount,
   getAnalytics,
   updateAssetStatus,
+  updateAllEmailNotifications,
   getCPUUsage,
   getRAMUsage,
 };
