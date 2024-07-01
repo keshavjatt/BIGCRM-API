@@ -16,19 +16,8 @@ const assetSchema = new mongoose.Schema({
   lastDownTime: { type: Date, default: null },
   firstDownTime: { type: Date, default: null },
   projectName: { type: String, required: true },
-  lastEmailSentTime: { type: Date, default: null }, // Add this line
+  lastEmailSentTime: { type: Date, default: null },
+  emailNotifications: { type: Boolean, default: true },
 });
-
-assetSchema.statics.updateStatus = async function (linkId, newStatus) {
-  try {
-    return await this.findOneAndUpdate(
-      { linkId },
-      { status: newStatus },
-      { new: true }
-    );
-  } catch (error) {
-    throw new Error(error.message);
-  }
-};
 
 module.exports = mongoose.model("Asset", assetSchema);
