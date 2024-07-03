@@ -20,4 +20,8 @@ const assetSchema = new mongoose.Schema({
   emailNotifications: { type: Boolean, default: true },
 });
 
+assetSchema.statics.updateStatus = async function (linkId, status) {
+  return this.findOneAndUpdate({ linkId }, { status }, { new: true });
+};
+
 module.exports = mongoose.model("Asset", assetSchema);
