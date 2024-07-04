@@ -394,6 +394,27 @@ const getUnreachableAssetsCount = async (req, res) => {
   }
 };
 
+const pingIPAddressForPackets = async (ipAddress) => {
+  try {
+    let successCount = 0;
+    const pingPromises = [];
+    for (let i = 0; i < 100; i++) {
+      pingPromises.push(
+        ping.promise.probe(ipAddress).then((res) => {
+          if (res.alive) {
+            successCount++;
+          }
+        })
+      );
+    }
+    await Promise.all(pingPromises);
+    return successCount;
+  } catch (error) {
+    console.error("Error while pinging IP for packets:", error);
+    return 0;
+  }
+};
+
 const getAnalytics = async (req, res) => {
   try {
     const filter =
@@ -403,19 +424,15 @@ const getAnalytics = async (req, res) => {
     const assets = await Asset.find(filter);
 
     // Parallelize ping requests
-    const pingPromises = assets.map((asset) =>
-      ping.promise.probe(asset.ipAddress1)
-    );
-    const pingResults = await Promise.all(pingPromises);
-
-    // Collect analytics data based on ping results
-    const analyticsData = assets.map((asset, index) => {
-      const pingResult = pingResults[index];
+    const pingPromises = assets.map(async (asset) => {
+      const pingResult = await ping.promise.probe(asset.ipAddress1);
+      const successCount = await pingIPAddressForPackets(asset.ipAddress1);
       const performance = pingResult.alive
         ? `${pingResult.time} ms`
         : "Request timed out.";
 
       const liveStatus = pingResult.alive ? "UP" : "DOWN";
+      const packetSuccessRate = `${successCount}%`;
 
       return {
         linkId: asset.linkId,
@@ -423,9 +440,12 @@ const getAnalytics = async (req, res) => {
         ipAddress1: asset.ipAddress1,
         liveStatus: liveStatus,
         Performance: performance,
+        Packet: packetSuccessRate,
         connectivity: asset.connectivity,
       };
     });
+
+    const analyticsData = await Promise.all(pingPromises);
 
     res.json(analyticsData);
   } catch (error) {
