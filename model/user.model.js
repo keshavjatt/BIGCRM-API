@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   projectName: { type: String, required: true },
-  status: { type: String, enum: ["Active", "Block"], default: "Active" },
+  status: { type: String, enum: ["Active", "Block"]},
 });
 
 module.exports = mongoose.model("User", userSchema);
