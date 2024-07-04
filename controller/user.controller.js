@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user.model");
+const Asset = require("../model/asset.model");
 require("dotenv").config();
 
 const registerUser = async (req, res) => {
@@ -80,8 +81,12 @@ const loginUser = async (req, res) => {
       payload,
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
-      (err, token) => {
+      async (err, token) => {
         if (err) throw err;
+
+        // User ke assets ko fetch karein
+        const assets = await Asset.find({ projectName: user.projectName }).select('emailNotifications');
+
         res.json({
           message: "User logged in successfully",
           token,
@@ -93,6 +98,7 @@ const loginUser = async (req, res) => {
             userRole: user.userRole,
             projectName: user.projectName,
           },
+          assets: assets.map(asset => asset.emailNotifications),
         });
       }
     );
