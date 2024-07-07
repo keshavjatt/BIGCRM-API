@@ -440,7 +440,7 @@ const getAnalytics = async (req, res) => {
         ipAddress1: asset.ipAddress1,
         liveStatus: liveStatus,
         Performance: performance,
-        PacketLoss: packetLossRate,
+        Packet: packetLossRate,
         connectivity: asset.connectivity,
       };
     });
