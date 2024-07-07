@@ -432,7 +432,7 @@ const getAnalytics = async (req, res) => {
         : "Request timed out.";
 
       const liveStatus = pingResult.alive ? "UP" : "DOWN";
-      const packetSuccessRate = `${successCount}%`;
+      const packetLossRate = `${((100 - successCount) / 100) * 100}%`;
 
       return {
         linkId: asset.linkId,
@@ -440,7 +440,7 @@ const getAnalytics = async (req, res) => {
         ipAddress1: asset.ipAddress1,
         liveStatus: liveStatus,
         Performance: performance,
-        Packet: packetSuccessRate,
+        PacketLoss: packetLossRate,
         connectivity: asset.connectivity,
       };
     });
