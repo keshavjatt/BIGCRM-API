@@ -1,4 +1,3 @@
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user.model");
 const Asset = require("../model/asset.model");
@@ -26,13 +25,11 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     user = new User({
       name,
       mobileNo,
       empId,
-      password: hashedPassword,
+      password,
       address,
       userRole,
       projectName,
@@ -65,7 +62,7 @@ const loginUser = async (req, res) => {
       return res.status(403).json({ message: "You are blocked" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = password === user.password;
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -85,7 +82,9 @@ const loginUser = async (req, res) => {
         if (err) throw err;
 
         // User ke assets ko fetch karein
-        const assets = await Asset.find({ projectName: user.projectName }).select('emailNotifications');
+        const assets = await Asset.find({
+          projectName: user.projectName,
+        }).select("emailNotifications");
 
         res.json({
           message: "User logged in successfully",
@@ -98,7 +97,7 @@ const loginUser = async (req, res) => {
             userRole: user.userRole,
             projectName: user.projectName,
           },
-          assets: assets.map(asset => asset.emailNotifications),
+          assets: assets.map((asset) => asset.emailNotifications),
         });
       }
     );
@@ -170,10 +169,9 @@ const updateUser = async (req, res) => {
     user.userRole = userRole;
     user.projectName = projectName;
 
-    // If password is being updated, hash it
+    // If password is being updated, directly update it
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
+      user.password = password;
     }
 
     await user.save();
